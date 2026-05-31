@@ -1,0 +1,282 @@
+---
+import "../styles/app.css";
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.png" />
+    <title>Lexibush</title>
+  </head>
+  <body>
+    <div class="background"></div>
+    <main class="shell">
+      <header class="topbar glass-panel">
+        <div>
+          <p class="eyebrow">Lexibush</p>
+          <h1>Lexibush</h1>
+        </div>
+        <p class="topbar-desc">单词、短语、词根词缀、查询、跳转、统计和存档。</p>
+        <div class="stats-strip">
+          <span><b id="total-words">0</b> 词条</span>
+          <span><b id="total-phrases">0</b> 短语</span>
+          <span><b id="total-affixes">0</b> 词根词缀</span>
+        </div>
+      </header>
+
+      <nav class="tabs glass-panel" aria-label="功能区">
+        <button class="tab active" data-tab="search">查询</button>
+        <button class="tab" data-tab="words">单词管理</button>
+        <button class="tab" data-tab="affixes">词根词缀</button>
+        <button class="tab" data-tab="jump">Fail 跳转</button>
+        <button class="tab" data-tab="stats">统计</button>
+        <button class="tab" data-tab="archives">快照</button>
+        <button class="tab" data-tab="settings">设置</button>
+      </nav>
+
+      <section class="tab-page active glass-panel" id="tab-search">
+        <div class="section-head">
+          <h2>查询</h2>
+          <p>精确查询匹配完整词条；其他查询会将短语按空格拆词后匹配。</p>
+        </div>
+        <nav class="subtabs" aria-label="查询方式">
+          <button class="subtab active" data-subtab="search" data-panel="exact">精确查询</button>
+          <button class="subtab" data-subtab="search" data-panel="prefix">前缀查询</button>
+          <button class="subtab" data-subtab="search" data-panel="suffix">后缀查询</button>
+          <button class="subtab" data-subtab="search" data-panel="contains">包含查询</button>
+        </nav>
+        <div class="subpage active" data-subpage="search-exact">
+          <div class="inline-form"><input data-search-input="exact" placeholder="完整词条，例如 take root" /><button data-search-button="exact">查询</button></div>
+        </div>
+        <div class="subpage" data-subpage="search-prefix">
+          <div class="inline-form"><input data-search-input="prefix" placeholder="前缀，例如 pre / roo" /><button data-search-button="prefix">查询</button></div>
+        </div>
+        <div class="subpage" data-subpage="search-suffix">
+          <div class="inline-form"><input data-search-input="suffix" placeholder="后缀，例如 tion / oot" /><button data-search-button="suffix">查询</button></div>
+        </div>
+        <div class="subpage" data-subpage="search-contains">
+          <div class="inline-form"><input data-search-input="contains" placeholder="中缀或片段，例如 graph" /><button data-search-button="contains">查询</button></div>
+        </div>
+        <div class="cards" id="search-results"></div>
+      </section>
+
+      <section class="tab-page glass-panel" id="tab-words">
+        <div class="section-head">
+          <h2>单词管理</h2>
+          <p>支持逐词性添加、JSON 添加和批量导入；词性显示按原样渲染，不补句号。</p>
+        </div>
+        <nav class="subtabs" aria-label="单词管理方式">
+          <button class="subtab active" data-subtab="words" data-panel="single">单条导入</button>
+          <button class="subtab" data-subtab="words" data-panel="json">JSON 导入</button>
+          <button class="subtab" data-subtab="words" data-panel="batch">批量导入</button>
+          <button class="subtab" data-subtab="words" data-panel="list">词条列表</button>
+        </nav>
+
+        <div class="subpage active" data-subpage="words-single">
+          <form id="word-form" class="grid-form">
+            <label>词条<input name="word" placeholder="serendipity / take root" required /></label>
+            <label>标签<input name="tags" placeholder="高频, 写作, 熟词僻义" /></label>
+            <div class="wide fieldset">
+              <div class="fieldset-head">
+                <strong>词性 - 释义</strong>
+                <div class="mini-actions">
+                  <button type="button" class="secondary" id="lookup-btn">查词典填入</button>
+                  <button type="button" class="secondary" id="add-meaning-row-btn">增加一组</button>
+                </div>
+              </div>
+              <div id="meaning-rows"></div>
+            </div>
+            <label class="wide">笔记<textarea name="notes" rows="3" placeholder="例句、联想、易混点"></textarea></label>
+            <div class="wide actions"><button type="submit">添加词条</button></div>
+          </form>
+        </div>
+
+        <div class="subpage" data-subpage="words-json">
+          <div class="grid-form">
+            <div class="wide drop-wrap">
+              <div class="drop-hint">拖拽 JSON 文件到这里，或点击选择文件</div>
+              <textarea id="word-json-input" data-file-drop class="wide" rows="10" placeholder='{"word":"example","meaning":{"n.":"例子","v.":"举例说明"},"tags":["基础"]}'></textarea>
+              <input class="file-picker" type="file" accept=".json,.txt,.md,text/plain,application/json" data-file-picker="word-json-input" />
+            </div>
+            <button id="word-json-btn" class="wide">导入 JSON 词条</button>
+          </div>
+        </div>
+
+        <div class="subpage" data-subpage="words-batch">
+          <nav class="subtabs compact" aria-label="批量导入格式">
+            <button class="subtab active" data-import-format="words" data-format="auto">自动识别</button>
+            <button class="subtab" data-import-format="words" data-format="space">空格格式</button>
+            <button class="subtab" data-import-format="words" data-format="comma">逗号格式</button>
+            <button class="subtab" data-import-format="words" data-format="json">JSON 格式</button>
+          </nav>
+          <div class="drop-wrap">
+            <div class="drop-hint">拖拽批量导入文件到这里，或点击选择文件</div>
+            <textarea id="word-import-input" data-file-drop rows="8" placeholder="example n. 例子&#10;take root v. 生根；扎根"></textarea>
+            <input class="file-picker" type="file" accept=".json,.txt,.csv,.md,text/plain,text/csv,application/json" data-file-picker="word-import-input" />
+          </div>
+          <button id="word-import-btn">批量导入</button>
+        </div>
+
+        <div class="subpage" data-subpage="words-list">
+          <div class="inline-form"><input id="word-list-filter" placeholder="过滤词条列表" /><button id="word-list-clear">清空过滤</button></div>
+          <div class="cards" id="word-list"></div>
+        </div>
+      </section>
+
+      <section class="tab-page glass-panel" id="tab-affixes">
+        <div class="section-head">
+          <h2>词根词缀</h2>
+          <p>支持单条导入、批量导入和基础词根词缀播种。</p>
+        </div>
+        <nav class="subtabs" aria-label="词根词缀管理方式">
+          <button class="subtab active" data-subtab="affixes" data-panel="single">单条导入</button>
+          <button class="subtab" data-subtab="affixes" data-panel="batch">批量导入</button>
+          <button class="subtab" data-subtab="affixes" data-panel="list">词缀列表</button>
+        </nav>
+        <div class="subpage active" data-subpage="affixes-single">
+          <form id="affix-form" class="inline-form">
+            <input name="affix" placeholder="pre- / bio / -tion" required />
+            <select name="type">
+              <option value="prefix">前缀</option>
+              <option value="root">词根</option>
+              <option value="suffix">后缀</option>
+            </select>
+            <input name="meanings" placeholder="含义；用 ; 分隔" required />
+            <button type="submit">添加</button>
+            <button type="button" class="secondary" id="seed-affixes-btn">播种基础词缀</button>
+          </form>
+        </div>
+        <div class="subpage" data-subpage="affixes-batch">
+          <nav class="subtabs compact" aria-label="词根词缀导入格式">
+            <button class="subtab active" data-import-format="affixes" data-format="auto">自动识别</button>
+            <button class="subtab" data-import-format="affixes" data-format="space">空格格式</button>
+            <button class="subtab" data-import-format="affixes" data-format="comma">逗号格式</button>
+            <button class="subtab" data-import-format="affixes" data-format="json">JSON 格式</button>
+          </nav>
+          <div class="drop-wrap">
+            <div class="drop-hint">拖拽词根词缀文件到这里，或点击选择文件</div>
+            <textarea id="affix-import-input" data-file-drop rows="7" placeholder="pre- prefix 前；预先&#10;bio root 生命"></textarea>
+            <input class="file-picker" type="file" accept=".json,.txt,.csv,.md,text/plain,text/csv,application/json" data-file-picker="affix-import-input" />
+          </div>
+          <button id="affix-import-btn">批量导入</button>
+        </div>
+        <div class="subpage" data-subpage="affixes-list">
+          <div class="chips" id="affix-list"></div>
+        </div>
+      </section>
+
+      <section class="tab-page glass-panel" id="tab-jump">
+        <div class="section-head">
+          <h2>Fail 跳转</h2>
+          <p>沿前向或后向关系分析词条链，并提示可加入的词根词缀。</p>
+        </div>
+        <nav class="subtabs" aria-label="跳转方向">
+          <button class="subtab active" data-subtab="jump" data-panel="prefix">前向跳转</button>
+          <button class="subtab" data-subtab="jump" data-panel="suffix">后向跳转</button>
+        </nav>
+        <div class="subpage active" data-subpage="jump-prefix">
+          <div class="inline-form"><input data-jump-input="prefix" placeholder="输入一个词，例如 unbelievable" /><button data-jump-button="prefix">执行跳转</button></div>
+        </div>
+        <div class="subpage" data-subpage="jump-suffix">
+          <div class="inline-form"><input data-jump-input="suffix" placeholder="输入一个词，例如 helpfulness" /><button data-jump-button="suffix">执行跳转</button></div>
+        </div>
+        <div class="cards" id="jump-results"></div>
+      </section>
+
+      <section class="tab-page glass-panel" id="tab-stats">
+        <div class="section-head">
+          <h2>统计</h2>
+          <p>热力图按周排布，最多展示最近 180 天。</p>
+        </div>
+        <nav class="subtabs compact" aria-label="趋势图指标">
+          <button class="subtab active" data-trend-metric="words">词条增长</button>
+          <button class="subtab" data-trend-metric="affixes">词根词缀增长</button>
+        </nav>
+        <div class="chart-grid">
+          <div class="chart-card">
+            <canvas id="growth-chart" width="760" height="300"></canvas>
+            <div id="growth-tooltip" class="chart-tooltip"></div>
+          </div>
+          <div id="pos-chart" class="bar-chart"></div>
+        </div>
+        <h3>最近 180 天加入热力图</h3>
+        <div id="heatmap" class="heatmap weekly"></div>
+        <section class="export-panel">
+          <div class="section-head compact-head">
+            <h3>按日期统计与导出</h3>
+            <p>筛选日期范围后，可导出 Markdown 表或 JSON。</p>
+          </div>
+          <div class="inline-form export-form">
+            <label>开始日期<input id="export-start" type="date" /></label>
+            <label>结束日期<input id="export-end" type="date" /></label>
+            <select id="export-target" aria-label="导出目标">
+              <option value="words">单词 / 短语</option>
+              <option value="affixes">词根词缀</option>
+              <option value="all">全部</option>
+            </select>
+            <button id="refresh-date-stats-btn" type="button">统计</button>
+          </div>
+          <div id="date-stats" class="date-stats"></div>
+          <div class="actions">
+            <button id="export-md-btn" type="button">导出 Markdown</button>
+            <button id="export-json-btn" type="button">导出 JSON</button>
+            <button id="download-stats-btn" type="button" class="secondary">下载完整统计 JSON</button>
+          </div>
+        </section>
+      </section>
+
+      <section class="tab-page glass-panel" id="tab-archives">
+        <div class="section-head">
+          <h2>快照管理</h2>
+          <p>删除前自动快照；也可手动创建、刷新、恢复到历史快照。</p>
+        </div>
+        <div class="inline-form">
+          <input id="archive-message" placeholder="快照说明，例如 before exam cleanup" />
+          <button id="snapshot-btn">建立快照</button>
+          <button class="secondary" id="refresh-archives-btn">刷新列表</button>
+        </div>
+        <div class="cards" id="archive-list"></div>
+      </section>
+
+      <section class="tab-page glass-panel" id="tab-settings">
+        <div class="section-head">
+          <h2>设置</h2>
+          <p>主题、字号与字体在浏览器本地保存，风格参考 CFSite 的玻璃面板与主题切换。</p>
+        </div>
+        <form id="settings-form" class="grid-form">
+          <label>主题模式
+            <select name="mode">
+              <option value="system">跟随系统</option>
+              <option value="light">浅色</option>
+              <option value="dark">深色</option>
+            </select>
+          </label>
+          <label>主题风格
+            <select name="style">
+              <option value="forest">森林</option>
+              <option value="glass">玻璃</option>
+              <option value="ocean">海湾</option>
+              <option value="sunset">日落</option>
+              <option value="rose">玫瑰</option>
+              <option value="slate">石板</option>
+              <option value="aurora">极光</option>
+            </select>
+          </label>
+          <label>字号缩放<input name="scale" type="range" min="0.8" max="1.5" step="0.05" /></label>
+          <label>界面字体<input name="uiFont" placeholder="system-ui, sans-serif" /></label>
+          <label>内容字体<input name="contentFont" placeholder="Georgia, serif" /></label>
+          <div class="wide actions">
+            <button type="button" class="secondary" id="reset-settings-btn">重置设置</button>
+            <button type="submit">保存设置</button>
+          </div>
+        </form>
+      </section>
+    </main>
+    <div id="toast" role="status"></div>
+    <script>
+      import "../scripts/app.js";
+    </script>
+  </body>
+</html>
